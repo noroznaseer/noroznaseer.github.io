@@ -6,7 +6,8 @@
     <title>NOROZ NASEER | A2R Operations & Financial Data Analyst</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-color: #f8fafc;
@@ -421,6 +422,152 @@
             border-bottom: 1px dashed var(--border-color);
             padding-bottom: 0.5rem;
         }
+
+        /* ── MODAL ENGINE INTEGRATION OVERLAYS ── */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-container {
+            width: 90%;
+            max-width: 860px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 14px;
+            position: relative;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.4);
+            animation: modalScaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #ffffff;
+            font-size: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10015;
+        }
+        .modal-close-btn:hover { background: rgba(255,255,255,0.2); }
+
+        @keyframes modalScaleUp {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* ── INJECTED RECONCILER GLOBAL STRUCTS ── */
+        .recon-body {
+            --bg: #090c10;
+            --surface: #0f1318;
+            --surface2: #161b22;
+            --border: #21262d;
+            --border-bright: #30363d;
+            --accent: #00d4aa;
+            --accent-dim: rgba(0, 212, 170, 0.12);
+            --accent-glow: rgba(0, 212, 170, 0.25);
+            --amber: #f0a500;
+            --amber-dim: rgba(240, 165, 0, 0.1);
+            --red: #f85149;
+            --red-dim: rgba(248, 81, 73, 0.1);
+            --text-primary: #e6edf3;
+            --text-secondary: #7d8590;
+            --text-muted: #484f58;
+            background: var(--bg);
+            color: var(--text-primary);
+            font-family: 'IBM Plex Mono', monospace;
+            padding: 40px 30px;
+            transition: all 0.3s ease;
+        }
+
+        .recon-body[data-modal-theme="light"] {
+            --bg: #f6f8fa;
+            --surface: #ffffff;
+            --surface2: #f3f4f6;
+            --border: #d0d7de;
+            --border-bright: #afb8c1;
+            --accent: #00896c;
+            --accent-dim: rgba(0, 137, 108, 0.08);
+            --accent-glow: rgba(0, 137, 108, 0.15);
+            --amber: #9a6700;
+            --amber-dim: rgba(154, 103, 0, 0.08);
+            --red: #cf222e;
+            --red-dim: rgba(207, 34, 46, 0.08);
+            --text-primary: #24292f;
+            --text-secondary: #57606a;
+            --text-muted: #8c959f;
+        }
+
+        .recon-wrapper { max-width: 100%; margin: 0 auto; position: relative; }
+        .recon-theme-toggle-wrap { position: absolute; top: -10px; right: 45px; z-index: 10; }
+        .recon-theme-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); padding: 8px 14px; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px; letter-spacing: 0.05em; transition: all 0.2s; }
+        .recon-theme-btn:hover { border-color: var(--border-bright); color: var(--text-primary); }
+        .recon-theme-btn .icon-sun { display: none; }
+        .recon-theme-btn .icon-moon { display: block; }
+        .recon-body[data-modal-theme="light"] .recon-theme-btn .icon-sun { display: block; }
+        .recon-body[data-modal-theme="light"] .recon-theme-btn .icon-moon { display: none; }
+        .recon-header { margin-bottom: 36px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+        .recon-header-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .recon-header-eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: var(--accent); }
+        .recon-header h2 { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; color: var(--text-primary); }
+        .recon-header h2 span { color: var(--accent); }
+        .recon-header-sub { margin-top: 10px; font-size: 12px; color: var(--text-secondary); letter-spacing: 0.02em; }
+        .recon-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+        .recon-card-label { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .recon-card-label .num { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 1px solid var(--border-bright); border-radius: 4px; font-size: 10px; color: var(--accent); }
+        .recon-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 580px) { .recon-upload-grid { grid-template-columns: 1fr; } }
+        .recon-upload-box { background: var(--surface2); border: 1px dashed var(--border-bright); border-radius: 10px; padding: 24px 20px; transition: all 0.2s; }
+        .recon-upload-box:hover, .recon-upload-box.loaded { border-color: var(--accent); background: var(--accent-dim); }
+        .recon-upload-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+        .recon-upload-sub { font-size: 10px; color: var(--text-muted); margin-bottom: 16px; letter-spacing: 0.05em; }
+        .recon-upload-status { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 12px; display: none; letter-spacing: 0.05em; }
+        .recon-upload-status.show { display: block; }
+        .recon-file-btn { display: inline-block; cursor: pointer; }
+        .recon-file-btn input[type="file"] { display: none; }
+        .recon-file-btn-label { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: transparent; border: 1px solid var(--border-bright); border-radius: 6px; font-size: 11px; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em; }
+        .recon-file-btn-label:hover { border-color: var(--accent); color: var(--accent); }
+        .recon-params-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 580px) { .recon-params-grid { grid-template-columns: 1fr; } }
+        .recon-param-group label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+        .recon-param-input-wrap { display: flex; align-items: center; gap: 10px; }
+        .recon-param-input-wrap input { width: 72px; padding: 8px 12px; background: var(--surface2); border: 1px solid var(--border-bright); border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; color: var(--text-primary); text-align: center; outline: none; transition: border-color 0.2s; }
+        .recon-param-input-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+        .recon-param-unit { font-size: 11px; color: var(--text-secondary); }
+        .recon-demo-banner { background: var(--amber-dim); border: 1px solid rgba(240,165,0,0.2); border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+        .recon-body[data-modal-theme="light"] .recon-demo-banner { border-color: rgba(154, 103, 0, 0.2); }
+        .recon-demo-text { font-size: 11px; color: var(--amber); letter-spacing: 0.03em; }
+        .recon-demo-btn { padding: 8px 20px; background: var(--amber); border: none; border-radius: 6px; font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #090c10; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .recon-body[data-modal-theme="light"] .recon-demo-btn { color: #ffffff; }
+        .recon-demo-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .recon-run-btn { width: 100%; padding: 18px; background: var(--accent); border: none; border-radius: 10px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #090c10; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; margin-top: 8px; }
+        .recon-body[data-modal-theme="light"] .recon-run-btn { color: #ffffff; }
+        .recon-run-btn:hover { box-shadow: 0 0 32px var(--accent-glow), 0 8px 24px rgba(0,0,0,0.4); }
     </style>
 </head>
 <body>
@@ -524,7 +671,7 @@
                             <span class="tag-pill">Pandas Dataframes</span>
                             <span class="tag-pill">Audit Logic</span>
                         </div>
-                        <a href="https://noroznaseer.github.io/" class="btn btn-secondary" style="font-size:0.8rem; padding: 0.4rem 1rem; width: fit-content;">Launch Script UI →</a>
+                        <button id="launchScriptBtn" class="btn btn-secondary" style="font-size:0.8rem; padding: 0.4rem 1rem; width: fit-content;">Launch Script UI →</button>
                     </div>
                 </div>
 
@@ -585,18 +732,112 @@
         </section>
     </main>
 
+    <div class="modal-overlay" id="reconModal">
+        <div class="modal-container">
+            <button class="modal-close-btn" id="closeModalBtn" aria-label="Close UI">&times;</button>
+            <div class="recon-body" data-modal-theme="dark">
+                <div class="recon-wrapper">
+                    <div class="recon-theme-toggle-wrap">
+                        <button class="recon-theme-btn" onclick="toggleModalTheme()" aria-label="Toggle Engine Theme">
+                            <span class="icon-sun">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9zM8 1v1.5M8 13.5V15M2.34 2.34l1.06 1.06M12.6l1.06 1.06M1 8h1.5M13.5 8H15M2.34 13.66l1.06-1.06M12.6 3.4l1.06-1.06" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                LIGHT
+                            </span>
+                            <span class="icon-moon">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M14.25 9.77A6.75 6.75 0 116.23 1.75a5.25 5.25 0 008.02 8.02z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                DARK
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="recon-header">
+                        <div class="recon-header-eyebrow">Automated Finance Tooling</div>
+                        <h2>GL <span>Reconciliation</span><br>Engine</h2>
+                        <p class="recon-header-sub">// Upload CSV records → match ledger to bank → export clean Excel audit report</p>
+                    </div>
+
+                    <div class="recon-demo-banner">
+                        <div class="recon-demo-text"><strong>No data?</strong> Load a built-in scenario to test the engine instantly.</div>
+                        <button type="button" class="recon-demo-btn" onclick="loadSampleData()">✦ Load Demo Data</button>
+                    </div>
+
+                    <div class="recon-card">
+                        <div class="recon-card-label">
+                            <span class="num">01</span>
+                            Data Sources
+                        </div>
+                        <div class="recon-upload-grid">
+                            <div class="recon-upload-box" id="glBox">
+                                <div class="recon-upload-title">General Ledger</div>
+                                <div class="recon-upload-sub">.CSV — internal book records</div>
+                                <label class="recon-file-btn">
+                                    <input type="file" id="glFile" accept=".csv" onchange="handleFileUpload(event, 'gl')" />
+                                    <span class="recon-file-btn-label">
+                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1v10M4 7l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        Select File
+                                    </span>
+                                </label>
+                                <div class="recon-upload-status" id="glStatus">✓ &nbsp;FILE LOADED</div>
+                            </div>
+
+                            <div class="recon-upload-box" id="bankBox">
+                                <div class="recon-upload-title">Bank Statement</div>
+                                <div class="recon-upload-sub">.CSV — clearing transactions</div>
+                                <label class="recon-file-btn">
+                                    <input type="file" id="bankFile" accept=".csv" onchange="handleFileUpload(event, 'bank')" />
+                                    <span class="recon-file-btn-label">
+                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1v10M4 7l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        Select File
+                                    </span>
+                                </label>
+                                <div class="recon-upload-status" id="bankStatus">✓ &nbsp;FILE LOADED</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="recon-card">
+                        <div class="recon-card-label">
+                            <span class="num">02</span>
+                            Match Parameters
+                        </div>
+                        <div class="recon-params-grid">
+                            <div class="recon-param-group">
+                                <label>Date Tolerance Window</label>
+                                <div class="recon-param-input-wrap">
+                                    <input type="number" id="daysTolerance" value="3" min="0" />
+                                    <span class="recon-param-unit">days allowed between entries</span>
+                                </div>
+                            </div>
+                            <div class="recon-param-group">
+                                <label>Rounding Discrepancy</label>
+                                <div class="recon-param-input-wrap">
+                                    <span class="recon-param-unit">$</span>
+                                    <input type="number" id="amountTolerance" value="0.00" step="0.01" min="0" />
+                                    <span class="recon-param-unit">max delta</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" id="runBtn" onclick="runReconciliation()" class="recon-run-btn">
+                        ⟶ &nbsp; Run Reconciliation &amp; Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // --- Core Site UI Logic ---
         const themeToggle = document.getElementById('themeToggle');
         const toggleText = document.getElementById('toggleText');
         const glowPointer = document.getElementById('glowPointer');
         
-        // Pointer Tracker logic
         document.addEventListener('mousemove', (e) => {
             glowPointer.style.left = e.clientX + 'px';
             glowPointer.style.top = e.clientY + 'px';
         });
 
-        // Theme Loader 
         const activeTheme = localStorage.getItem('theme-preference') || 'light';
         if (activeTheme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
@@ -606,7 +847,6 @@
             toggleText.textContent = 'LIGHT';
         }
 
-        // Toggle Controller Action
         themeToggle.addEventListener('click', () => {
             let current = document.documentElement.getAttribute('data-theme');
             if (current === 'dark') {
@@ -619,6 +859,212 @@
                 localStorage.setItem('theme-preference', 'dark');
             }
         });
+
+        // --- Pop-up Overlay Controllers ---
+        const reconModal = document.getElementById('reconModal');
+        const launchScriptBtn = document.getElementById('launchScriptBtn');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        launchScriptBtn.addEventListener('click', () => {
+            reconModal.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Stop background scrolling
+        });
+
+        const closeOverlayFunc = () => {
+            reconModal.classList.remove('active');
+            document.body.style.overflow = '';
+        };
+
+        closeModalBtn.addEventListener('click', closeOverlayFunc);
+        reconModal.addEventListener('click', (e) => {
+            if (e.target === reconModal) closeOverlayFunc();
+        });
+
+        // --- GL Functional Script Engine Logic ---
+        let glData = [];
+        let bankData = [];
+
+        function toggleModalTheme() {
+            const reconBody = document.querySelector('.recon-body');
+            const currentTheme = reconBody.getAttribute('data-modal-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            reconBody.setAttribute('data-modal-theme', newTheme);
+        }
+
+        function parseCSV(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (!lines.length) return [];
+            const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+            return lines.slice(1).map(line => {
+                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                const row = {};
+                headers.forEach((h, i) => {
+                    let v = values[i] ? values[i].trim() : '';
+                    row[h] = v.replace(/^"|"$/g, '');
+                });
+                return row;
+            });
+        }
+
+        function handleFileUpload(event, type) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const parsed = parseCSV(e.target.result);
+                if (type === 'gl') {
+                    glData = parsed;
+                    const el = document.getElementById('glStatus');
+                    const box = document.getElementById('glBox');
+                    el.classList.add('show');
+                    el.innerText = '✓  GL LOADED — ' + parsed.length + ' ENTRIES';
+                    box.classList.add('loaded');
+                } else {
+                    bankData = parsed;
+                    const el = document.getElementById('bankStatus');
+                    const box = document.getElementById('bankBox');
+                    el.classList.add('show');
+                    el.innerText = '✓  BANK LOADED — ' + parsed.length + ' ENTRIES';
+                    box.classList.add('loaded');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function loadSampleData() {
+            glData = [
+                { id: 'tx-1001', date: '2026-05-18', amount: '2500.00' },
+                { id: 'tx-1002', date: '2026-05-19', amount: '450.75' },
+                { id: 'tx-1003', date: '2026-05-20', amount: '1200.00' },
+                { id: 'tx-1004', date: '2026-05-21', amount: '85.00' }
+            ];
+            bankData = [
+                { id: 'tx-1001', date: '2026-05-18', amount: '2500.00' },
+                { id: 'tx-1002', date: '2026-05-22', amount: '450.75' },
+                { id: 'bank-fee-99', date: '2026-05-23', amount: '15.00' },
+                { id: 'tx-1004', date: '2026-05-21', amount: '85.00' }
+            ];
+
+            ['gl', 'bank'].forEach((t) => {
+                const el = document.getElementById(t + 'Status');
+                const box = document.getElementById(t + 'Box');
+                el.classList.add('show');
+                el.innerText = '✓  DEMO DATA INJECTED';
+                box.classList.add('loaded');
+            });
+        }
+
+        function runReconciliation() {
+            if (!glData.length || !bankData.length) {
+                alert('Load data first — use demo or upload your CSVs.');
+                return;
+            }
+
+            const daysTol = parseInt(document.getElementById('daysTolerance').value) || 0;
+            const amtTol  = parseFloat(document.getElementById('amountTolerance').value) || 0;
+
+            const cleanRows = arr => arr.map(row => {
+                const keys = Object.keys(row);
+                const idKey   = keys.find(k => /id|ref|code|desc/.test(k)) || keys[0];
+                const dateKey = keys.find(k => /date|time|post/.test(k)) || keys[1];
+                const amtKey  = keys.find(k => /amt|amount|val|balance/.test(k)) || keys[2];
+                const raw = parseFloat(String(row[amtKey] || '0').replace(/[^0-9.-]/g, ''));
+                return {
+                    id: String(row[idKey] || '').trim(),
+                    dateStr: String(row[dateKey] || ''),
+                    date: new Date(row[dateKey] || Date.now()),
+                    amount: isNaN(raw) ? 0 : raw
+                };
+            });
+
+            const cleanGL   = cleanRows(glData);
+            const cleanBank = cleanRows(bankData);
+
+            const matched = [];
+            const unmatchedGL   = [...cleanGL];
+            const unmatchedBank = [...cleanBank];
+
+            for (let i = unmatchedGL.length - 1; i >= 0; i--) {
+                const g = unmatchedGL[i];
+                const bi = unmatchedBank.findIndex(b => {
+                    const amtOk  = Math.abs(g.amount - b.amount) <= amtTol;
+                    const dateOk = Math.abs(g.date - b.date) <= daysTol * 86400000;
+                    const idOk   = g.id !== '' && g.id.toLowerCase() === b.id.toLowerCase();
+                    return amtOk && (idOk || dateOk);
+                });
+                if (bi !== -1) {
+                    const b = unmatchedBank.splice(bi, 1)[0];
+                    unmatchedGL.splice(i, 1);
+                    matched.push({
+                        'GL Transaction ID': g.id,
+                        'GL Amount': g.amount,
+                        'Bank Transaction ID': b.id,
+                        'Bank Amount': b.amount,
+                        'Date (GL)': g.dateStr,
+                        'Date (Bank)': b.dateStr,
+                        'Status': 'MATCHED ✓'
+                    });
+                }
+            }
+
+            const variances = [];
+            unmatchedGL.forEach(x => variances.push({
+                'Source': 'GENERAL LEDGER',
+                'Transaction ID': x.id,
+                'Date': x.dateStr,
+                'Amount': x.amount,
+                'Issue': 'NOT FOUND IN BANK STATEMENT'
+            }));
+            unmatchedBank.forEach(x => variances.push({
+                'Source': 'BANK STATEMENT',
+                'Transaction ID': x.id,
+                'Date': x.dateStr,
+                'Amount': x.amount,
+                'Issue': 'NOT FOUND IN GENERAL LEDGER'
+            }));
+
+            const glTotal   = cleanGL.reduce((s, i) => s + i.amount, 0);
+            const bankTotal = cleanBank.reduce((s, i) => s + i.amount, 0);
+
+            const summary = [
+                { 'Metric': '', 'Value': '' },
+                { 'Metric': 'RECONCILIATION SUMMARY', 'Value': '' },
+                { 'Metric': '─────────────────────────────', 'Value': '──────────────' },
+                { 'Metric': 'General Ledger Total',     'Value': glTotal },
+                { 'Metric': 'Bank Statement Total',     'Value': bankTotal },
+                { 'Metric': 'Net Variance',             'Value': glTotal - bankTotal },
+                { 'Metric': '─────────────────────────────', 'Value': '──────────────' },
+                { 'Metric': 'Matched Pairs',            'Value': matched.length },
+                { 'Metric': 'Unresolved GL Breaks',     'Value': unmatchedGL.length },
+                { 'Metric': 'Unresolved Bank Breaks',   'Value': unmatchedBank.length },
+                { 'Metric': 'Match Rate',               'Value': ((matched.length / Math.max(cleanGL.length, 1)) * 100).toFixed(1) + '%' },
+                { 'Metric': '─────────────────────────────', 'Value': '──────────────' },
+                { 'Metric': 'Report Generated',          'Value': new Date().toLocaleString() },
+                { 'Metric': 'Days Tolerance Used',      'Value': daysTol },
+                { 'Metric': 'Amount Tolerance Used',    'Value': '$' + amtTol.toFixed(2) }
+            ];
+
+            try {
+                const wb = XLSX.utils.book_new();
+                const makeSheet = (data) => {
+                    const ws = XLSX.utils.json_to_sheet(data);
+                    const cols = Object.keys(data[0] || {}).map(k => ({
+                        wch: Math.max(k.length, ...data.map(r => String(r[k] ?? '').length))
+                    }));
+                    ws['!cols'] = cols;
+                    return ws;
+                };
+
+                XLSX.utils.book_append_sheet(wb, makeSheet(summary),   '📊 Summary');
+                XLSX.utils.book_append_sheet(wb, makeSheet(matched),    '✅ Matched');
+                XLSX.utils.book_append_sheet(wb, makeSheet(variances),  '⚠️ Variances');
+
+                XLSX.writeFile(wb, `GL_Recon_${new Date().toISOString().slice(0,10)}.xlsx`);
+            } catch (err) {
+                console.error(err);
+                alert('Export failed — check the console for details.');
+            }
+        }
     </script>
 </body>
 </html>
