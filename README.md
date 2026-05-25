@@ -25,6 +25,25 @@
             --text-muted: #484f58;
         }
 
+        /* ── LIGHT THEME OVERRIDES ── */
+        [data-theme="light"] {
+            --bg: #f6f8fa;
+            --surface: #ffffff;
+            --surface2: #f3f4f6;
+            --border: #d0d7de;
+            --border-bright: #afb8c1;
+            --accent: #00896c;
+            --accent-dim: rgba(0, 137, 108, 0.08);
+            --accent-glow: rgba(0, 137, 108, 0.15);
+            --amber: #9a6700;
+            --amber-dim: rgba(154, 103, 0, 0.08);
+            --red: #cf222e;
+            --red-dim: rgba(207, 34, 46, 0.08);
+            --text-primary: #24292f;
+            --text-secondary: #57606a;
+            --text-muted: #8c959f;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
@@ -35,6 +54,7 @@
             padding: 40px 20px 80px;
             position: relative;
             overflow-x: hidden;
+            transition: background 0.3s, color 0.3s;
         }
 
         /* Background grid */
@@ -49,6 +69,11 @@
             pointer-events: none;
             z-index: 0;
         }
+        [data-theme="light"] body::before {
+            background-image:
+                linear-gradient(rgba(0,137,108,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,137,108,0.02) 1px, transparent 1px);
+        }
 
         /* Glow blob */
         body::after {
@@ -62,6 +87,9 @@
             pointer-events: none;
             z-index: 0;
         }
+        [data-theme="light"] body::after {
+            background: radial-gradient(circle, rgba(0,137,108,0.04) 0%, transparent 70%);
+        }
 
         .wrapper {
             max-width: 820px;
@@ -69,6 +97,41 @@
             position: relative;
             z-index: 1;
         }
+
+        /* ── THEME TOGGLE BUTTON ── */
+        .theme-toggle-wrap {
+            position: absolute;
+            top: -10px;
+            right: 0;
+            z-index: 10;
+        }
+
+        .theme-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+        }
+
+        .theme-btn:hover {
+            border-color: var(--border-bright);
+            color: var(--text-primary);
+        }
+
+        .theme-btn .icon-sun { display: none; }
+        .theme-btn .icon-moon { display: block; }
+        [data-theme="light"] .theme-btn .icon-sun { display: block; }
+        [data-theme="light"] .theme-btn .icon-moon { display: none; }
 
         /* ── HEADER ── */
         .header {
@@ -126,7 +189,7 @@
             border-radius: 12px;
             padding: 28px;
             margin-bottom: 16px;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, background 0.3s, border-color 0.3s;
             animation: fadeUp 0.5s ease both;
         }
 
@@ -324,6 +387,9 @@
             flex-wrap: wrap;
             animation: fadeUp 0.4s ease both;
         }
+        [data-theme="light"] .demo-banner {
+            border-color: rgba(154, 103, 0, 0.2);
+        }
 
         .demo-text {
             font-size: 11px;
@@ -350,6 +416,9 @@
             transition: opacity 0.2s, transform 0.1s;
             white-space: nowrap;
         }
+        [data-theme="light"] .demo-btn {
+            color: #ffffff;
+        }
 
         .demo-btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .demo-btn:active { transform: translateY(0); }
@@ -372,6 +441,9 @@
             position: relative;
             overflow: hidden;
             margin-top: 8px;
+        }
+        [data-theme="light"] .run-btn {
+            color: #ffffff;
         }
 
         .run-btn::before {
@@ -418,35 +490,44 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        .card:nth-child(1) { animation-delay: 0.1s; }
-        .card:nth-child(2) { animation-delay: 0.2s; }
-        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(2) { animation-delay: 0.1s; }
+        .card:nth-child(3) { animation-delay: 0.2s; }
+        .card:nth-child(4) { animation-delay: 0.3s; }
     </style>
 </head>
 <body>
 <div class="wrapper">
 
-    <!-- Header -->
+    <div class="theme-toggle-wrap">
+        <button class="theme-btn" onclick="toggleTheme()" aria-label="Toggle Theme">
+            <span class="icon-sun">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9zM8 1v1.5M8 13.5V15M2.34 2.34l1.06 1.06M12.6l1.06 1.06M1 8h1.5M13.5 8H15M2.34 13.66l1.06-1.06M12.6 3.4l1.06-1.06" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                LIGHT
+            </span>
+            <span class="icon-moon">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M14.25 9.77A6.75 6.75 0 116.23 1.75a5.25 5.25 0 008.02 8.02z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                DARK
+            </span>
+        </button>
+    </div>
+
     <div class="header">
         <div class="header-eyebrow">Automated Finance Tooling</div>
         <h1>GL <span>Reconciliation</span><br>Engine</h1>
         <p class="header-sub">// Upload CSV records → match ledger to bank → export clean Excel audit report</p>
     </div>
 
-    <!-- Demo Banner -->
     <div class="demo-banner">
         <div class="demo-text"><strong>No data?</strong> Load a built-in scenario to test the engine instantly.</div>
         <button type="button" class="demo-btn" onclick="loadSampleData()">✦ Load Demo Data</button>
     </div>
 
-    <!-- Upload Card -->
     <div class="card">
         <div class="card-label">
             <span class="num">01</span>
             Data Sources
         </div>
         <div class="upload-grid">
-            <!-- GL Upload -->
             <div class="upload-box" id="glBox">
                 <div class="upload-title">General Ledger</div>
                 <div class="upload-sub">.CSV — internal book records</div>
@@ -460,7 +541,6 @@
                 <div class="upload-status" id="glStatus">✓ &nbsp;FILE LOADED</div>
             </div>
 
-            <!-- Bank Upload -->
             <div class="upload-box" id="bankBox">
                 <div class="upload-title">Bank Statement</div>
                 <div class="upload-sub">.CSV — clearing transactions</div>
@@ -476,7 +556,6 @@
         </div>
     </div>
 
-    <!-- Params Card -->
     <div class="card">
         <div class="card-label">
             <span class="num">02</span>
@@ -501,7 +580,6 @@
         </div>
     </div>
 
-    <!-- Run Button -->
     <button type="button" id="runBtn" onclick="runReconciliation()" class="run-btn">
         ⟶ &nbsp; Run Reconciliation &amp; Export Excel
     </button>
@@ -511,6 +589,17 @@
 <script>
     let glData = [];
     let bankData = [];
+
+    // Theme logic initialized right away to avoid screen flash
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    }
 
     function parseCSV(text) {
         const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
